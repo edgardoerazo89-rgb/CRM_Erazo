@@ -1,0 +1,1779 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Control de Ventas y Comisiones</title>
+
+  <!-- Icono de pestaña -->
+  <link rel="icon" type="image/png" href="favicon.png" />
+
+  <style>
+    :root{
+      --bg0:#070a14;
+      --bg1:#0b1020;
+      --card:rgba(255,255,255,.06);
+      --stroke:rgba(255,255,255,.10);
+      --text:#e8ecff;
+      --muted:rgba(232,236,255,.70);
+      --muted2:rgba(232,236,255,.55);
+      --acc:#7c5cff;
+      --acc2:#2dd4bf;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --good:#22c55e;
+
+      --sidebarW: 260px;
+      --sidebarMiniW: 76px;
+      --radius: 18px;
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+      --blur: blur(14px);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(124,92,255,.25), transparent 55%),
+        radial-gradient(900px 550px at 70% 20%, rgba(45,212,191,.18), transparent 60%),
+        radial-gradient(900px 650px at 60% 90%, rgba(245,158,11,.10), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+
+    .app{ display:flex; min-height:100vh; overflow-x:hidden; }
+
+    .sidebar{
+      width: var(--sidebarW);
+      padding: 16px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      backdrop-filter: var(--blur);
+      border-right: 1px solid var(--stroke);
+      transition: width .22s ease;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+    .sidebar.min{ width: var(--sidebarMiniW); }
+
+/* 🔧 Ajuste logo cuando sidebar está minimizado */
+.sidebar.min .brand{
+  justify-content: center;
+  padding: 10px;
+}
+
+.sidebar.min .logoImg{
+  margin: 0;
+}
+
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding: 10px 10px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      box-shadow: 0 12px 40px rgba(0,0,0,.25);
+    }
+    .logoImg{
+      width:44px;
+      height:44px;
+      border-radius: 14px;
+      object-fit:cover;
+      border:1px solid rgba(255,255,255,.15);
+      box-shadow: 0 12px 24px rgba(0,0,0,.35);
+      flex:0 0 auto;
+    }
+    .brandText h1{ margin:0; font-size: 13.5px; letter-spacing: .2px; line-height: 1.15; }
+    .brandText p{ margin:4px 0 0; font-size: 11px; color: var(--muted2); }
+    .sidebar.min .brandText{ display:none; }
+
+    .nav{ display:flex; flex-direction:column; gap:10px; min-width:0; }
+    .navBtn{
+      width:100%;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding: 8px 10px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--text);
+      cursor:pointer;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      user-select:none;
+      min-width:0;
+    }
+    .navBtn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.06);
+      border-color: rgba(124,92,255,.30);
+    }
+    .navBtn.active{
+      background: linear-gradient(135deg, rgba(124,92,255,.25), rgba(45,212,191,.10));
+      border-color: rgba(124,92,255,.45);
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+
+    /* ✅ icon centrado bien incluso minimizado */
+    .icon{
+      width:40px;height:40px;
+      display:grid;place-items:center;
+      border-radius: 14px;
+      background: rgba(0,0,0,.25);
+      border:1px solid rgba(255,255,255,.10);
+      flex:0 0 auto;
+    }
+
+    .navLabel{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .navLabel b{ font-size: 13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .navLabel span{ font-size: 11px; color: var(--muted2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sidebar.min .navLabel{ display:none; }
+
+    .sidebar.min .navBtn{
+      justify-content:center;
+      padding: 10px;
+      gap:0;
+    }
+
+    .sideBottom{ margin-top:auto; display:flex; flex-direction:column; gap:10px; }
+
+    .toggleSide{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      cursor:pointer;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .toggleSide:hover{
+      border-color: rgba(124,92,255,.35);
+      background: rgba(255,255,255,.06);
+    }
+
+    .content{ flex:1; min-width: 0; overflow-x:hidden; display:flex; flex-direction:column; }
+
+    .topbar{
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--stroke);
+      background: rgba(10,14,32,.55);
+      backdrop-filter: var(--blur);
+    }
+    .topLeft{ display:flex; align-items:center; gap:12px; min-width:0; }
+    .topLogo{
+      width:34px;height:34px;
+      border-radius: 12px;
+      object-fit:cover;
+      border:1px solid rgba(255,255,255,.15);
+      box-shadow: 0 10px 20px rgba(0,0,0,.35);
+      flex:0 0 auto;
+    }
+    .topTitle{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .topTitle b{ font-size: 14px; letter-spacing:.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .topTitle span{ font-size: 11.5px; color: var(--muted2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    .topRight{ display:flex; align-items:center; gap:10px; }
+    .pill{
+      padding:10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.10);
+      color: var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(124,92,255,.18);
+      border:1px solid rgba(124,92,255,.35);
+      color: var(--text);
+      cursor:pointer;
+      user-select:none;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      white-space:nowrap;
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(124,92,255,.25); border-color: rgba(124,92,255,.50); }
+    .btn.secondary{ background: rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.10); color: var(--text); }
+    .btn.secondary:hover{ background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.16); }
+    .btn.good{ background: rgba(34,197,94,.16); border-color: rgba(34,197,94,.35); }
+    .btn.good:hover{ background: rgba(34,197,94,.22); border-color: rgba(34,197,94,.50); }
+    .btn.warn{ background: rgba(245,158,11,.16); border-color: rgba(245,158,11,.35); }
+    .btn.warn:hover{ background: rgba(245,158,11,.22); border-color: rgba(245,158,11,.50); }
+    .btn.bad{ background: rgba(239,68,68,.16); border-color: rgba(239,68,68,.35); }
+    .btn.bad:hover{ background: rgba(239,68,68,.22); border-color: rgba(239,68,68,.50); }
+
+    .main{ padding:18px 18px 26px; overflow-x:hidden; min-width:0; }
+
+    .grid{ display:grid; grid-template-columns: 1.4fr .6fr; gap: 14px; min-width:0; }
+    @media (max-width: 1050px){ .grid{ grid-template-columns: 1fr; } }
+
+    .card{
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      min-width:0;
+    }
+    .cardHeader{
+      padding: 14px 16px 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      background: rgba(255,255,255,.03);
+      min-width:0;
+    }
+    .cardHeader h2{
+      margin:0;
+      font-size: 14px;
+      letter-spacing:.2px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+    }
+    .cardHeader h2 span{ color: var(--muted2); font-weight: 500; font-size: 12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .cardBody{ padding: 14px 16px 16px; min-width:0; }
+
+    .muted{ color: var(--muted); }
+    .muted2{ color: var(--muted2); }
+
+    .kpi{ display:grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    @media (max-width: 1050px){ .kpi{ grid-template-columns: repeat(2,1fr); } }
+    .kpiBox{
+      padding: 12px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      min-width:0;
+    }
+    .kpiBox b{ display:block; font-size: 18px; margin-top: 4px; }
+    .kpiBox span{ font-size: 11.5px; color: var(--muted2); }
+
+    .formGrid{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; min-width:0; }
+    @media (max-width: 1050px){ .formGrid{ grid-template-columns: 1fr; } }
+
+    label{ font-size: 11.5px; color: var(--muted2); display:block; margin: 0 0 6px; }
+    input, select, textarea{
+      width:100%;
+      padding: 11px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+      color: var(--text);
+      outline:none;
+      transition: border-color .12s ease, background .12s ease;
+    }
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(124,92,255,.55);
+      background: rgba(0,0,0,.28);
+    }
+    textarea{ min-height: 84px; resize: vertical; }
+
+    .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+    .row.right{ justify-content:flex-end; }
+
+    .tableWrap{ max-width:100%; overflow:hidden; min-width:0; }
+    table{
+      width:100% !important;
+      table-layout: fixed !important;
+      border-collapse: collapse;
+      font-size: 12.3px;
+      min-width:0;
+    }
+    th, td{
+      text-align:left;
+      padding: 11px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      vertical-align: top;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    thead th{
+      color: rgba(232,236,255,.85);
+      font-size: 11.5px;
+      letter-spacing:.25px;
+      background: rgba(255,255,255,.03);
+    }
+
+    /* ✅ badge ajustado al texto */
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      white-space:nowrap;
+      width: fit-content;
+      max-width: max-content;
+    }
+    .bPending{ background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.35); }
+    .bCobrada{ background: rgba(45,212,191,.12); border-color: rgba(45,212,191,.35); }
+    .bPagada{ background: rgba(34,197,94,.12); border-color: rgba(34,197,94,.35); }
+
+    .small{ font-size: 11px; color: var(--muted2); }
+    .money{ font-weight:700; }
+    .nowrap{ white-space:nowrap; }
+
+    .hint{
+      padding: 12px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .hr{ height:1px; background: rgba(255,255,255,.08); margin: 14px 0; }
+
+    .modalBg{
+      position: fixed;
+      inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 20px;
+      z-index: 200;
+    }
+    .modal{
+  width: min(920px, 100%);
+  max-height: 90vh;          /* 🔑 clave */
+  display: flex;
+  flex-direction: column;
+
+  border-radius: 22px;
+  background: rgba(18,22,44,.85);
+  border:1px solid rgba(255,255,255,.12);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 40px 120px rgba(0,0,0,.55);
+  overflow: hidden;
+}
+    .modalHeader{
+      padding: 14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.03);
+    }
+    .modalHeader b{ font-size: 14px; }
+    .x{
+      width:40px;height:40px;
+      border-radius: 14px;
+      display:grid;place-items:center;
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.25);
+    }
+    .x:hover{ border-color: rgba(124,92,255,.40); }
+    .modalBody{
+  padding: 16px;
+  overflow-y: auto;   /* 🔑 scroll vertical interno */
+}
+
+  </style>
+</head>
+
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <img class="logoImg" src="logo.png" alt="Erazo Cars">
+      <div class="brandText">
+        <h1>Control de Ventas y Comisiones</h1>
+        <p>Local • Offline • Respaldo JSON</p>
+      </div>
+    </div>
+
+    <div class="nav">
+      <div class="navBtn active" data-view="home" title="Inicio">
+        <div class="icon">🏠</div>
+        <div class="navLabel"><b>Inicio</b><span>Resumen general</span></div>
+      </div>
+      <div class="navBtn" id="btnOpenCRM" title="CRM Clientes">
+  <div class="icon">🙎‍♂️</div>
+  <div class="navLabel">
+    <b>CRM</b>
+    <span>Clientes y seguimiento</span>
+  </div>
+</div>
+      <div class="navBtn" data-view="new" title="Registrar venta">
+        <div class="icon">➕</div>
+        <div class="navLabel"><b>Registrar venta</b><span>Nueva comisión</span></div>
+      </div>
+      <div class="navBtn" data-view="reports" title="Reportes">
+        <div class="icon">📊</div>
+        <div class="navLabel"><b>Reportes</b><span>Filtros + ranking</span></div>
+      </div>
+      <div class="navBtn" data-view="log" title="Registro tipo Excel">
+        <div class="icon">🧾</div>
+        <div class="navLabel"><b>Registro</b><span>Tipo Excel</span></div>
+      </div>
+      <div class="navBtn" data-view="backup" title="Respaldo JSON">
+        <div class="icon">💾</div>
+        <div class="navLabel"><b>Respaldo JSON</b><span>Guardar / Restaurar</span></div>
+      </div>
+    </div>
+
+    <div class="sideBottom">
+      <div class="toggleSide" id="toggleSideBtn" title="Minimizar / Maximizar panel">
+        ☰ Minimizar panel
+      </div>
+    </div>
+  </aside>
+
+  <section class="content">
+    <header class="topbar">
+      <div class="topLeft">
+        <img class="topLogo" src="logo.png" alt="Erazo Cars">
+        <div class="topTitle">
+          <b id="viewTitle">Inicio</b>
+          <span id="viewSubtitle">Resumen general y últimos registros</span>
+        </div>
+      </div>
+
+      <div class="topRight">
+        <div class="pill">Datos locales • Auto-guardado</div>
+        <div class="btn secondary" id="btnQuickNew">+ Nueva venta</div>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- HOME -->
+      <div class="view" id="view-home">
+        <div class="grid">
+          <div class="card">
+            <div class="cardHeader">
+              <h2>📌 Resumen <span class="muted2" id="homeRangeText">—</span></h2>
+              <div class="row">
+                <div class="btn secondary" id="btnHomeThisMonth">Este mes</div>
+                <div class="btn secondary" id="btnHomeAll">Todo</div>
+                <div class="btn secondary" id="btnHomePrint">🖨️ Imprimir resumen</div>
+              </div>
+            </div>
+            <div class="cardBody">
+              <div class="kpi" id="kpiRow"></div>
+              <div class="hr"></div>
+              <div class="hint">
+                Tip: en <b>Registro</b> puedes filtrar todo, y en <b>Reportes</b> obtienes un reporte formal listo para imprimir.
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="cardHeader">
+              <h2>⚡ Acciones rápidas <span class="muted2">control en 1 clic</span></h2>
+            </div>
+            <div class="cardBody">
+              <div class="row">
+                <div class="btn good" id="btnNewSale">➕ Registrar nueva venta</div>
+                <div class="btn warn" id="btnPendingCobrar">⏳ Pendientes de cobrar</div>
+                <div class="btn warn" id="btnPendingPagar">⌛ Pendientes de pagar</div>
+              </div>
+              <div class="hr"></div>
+              <div class="hint small">
+                Estados: <b>Pendiente</b> (dealer no paga), <b>Cobrado</b> (dealer pagó a ti), <b>Pagado</b> (ya pagaste al equipo).
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:14px;"></div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h2>🗂 Últimos registros <span class="muted2">cambio rápido de estado</span></h2>
+            <div class="row">
+              <div class="btn secondary" id="btnHomePrint2">🖨️ Imprimir</div>
+            </div>
+          </div>
+          <div class="cardBody">
+            <div class="tableWrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Dealer</th>
+                    <th>Cliente</th>
+                    <th>Vendedor</th>
+                    <th>Vehículo</th>
+                    <th>Comisión</th>
+                    <th>Fechas</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="homeTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- NEW -->
+      <div class="view" id="view-new" style="display:none;">
+        <div class="card">
+          <div class="cardHeader">
+            <h2>🧾 Registrar venta <span class="muted2">guardar comisión y estado</span></h2>
+            <div class="row">
+              <div class="btn secondary" id="btnResetForm">Limpiar</div>
+              <div class="btn good" id="btnSaveSale">Guardar venta</div>
+            </div>
+          </div>
+          <div class="cardBody">
+            <div class="formGrid">
+              <div>
+                <label>Fecha de venta</label>
+                <input type="date" id="fDate">
+              </div>
+              <div>
+                <label>Dealer</label>
+                <input type="text" id="fDealer" placeholder="Ej: USA AUTO BROKERS">
+              </div>
+              <div>
+                <label>Cliente</label>
+                <input type="text" id="fClient" placeholder="Ej: Carlos López">
+              </div>
+
+              <div>
+                <label>Vendedor</label>
+                <input type="text" id="fSeller" placeholder="Ej: RAMON ERAZO o nombre del equipo">
+              </div>
+              <div>
+                <label>Año</label>
+                <input type="number" id="fYear" placeholder="Ej: 2016">
+              </div>
+              <div>
+                <label>Marca</label>
+                <input type="text" id="fMake" placeholder="Ej: GMC">
+              </div>
+
+              <div>
+                <label>Modelo</label>
+                <input type="text" id="fModel" placeholder="Ej: SIERRA">
+              </div>
+              <div>
+                <label>Estilo (carrocería)</label>
+               <select id="fBodyStyle">
+  <option value="">— Selecciona —</option>
+  <option>SEDAN</option>
+  <option>COUPE</option>
+  <option>TROCA</option>
+  <option>SUV</option>
+  <option>VAN</option>
+  <option>BOX TRUCK</option>
+</select>
+              </div>
+              <div>
+                <label>Tipo</label>
+                <select id="fType">
+		<option value="">— Selecciona —</option>
+                  <option value="En casa">En casa</option>
+                  <option value="Banco">Banco</option>
+                </select>
+              </div>
+
+              <div>
+                <label>Comisión total ($)</label>
+                <input type="number" id="fCommTotal" placeholder="Ej: 400" step="0.01" min="0">
+              </div>
+              <div>
+                <label>Mi parte ($)</label>
+                <input type="number" id="fCommMe" placeholder="auto" step="0.01" min="0">
+              </div>
+              <div>
+                <label>Parte equipo ($)</label>
+                <input type="number" id="fCommTeam" placeholder="auto" step="0.01" min="0">
+              </div>
+
+              <div>
+                <label>Estado</label>
+                <select id="fStatus">
+		<option value="">— Selecciona —</option>
+                  <option value="Pendiente">Pendiente</option>
+                  <option value="Cobrado">Cobrado</option>
+                  <option value="Pagado">Pagado</option>
+                </select>
+              </div>
+              <div>
+                <label>Fecha cobrado</label>
+                <input type="date" id="fDateCobrada">
+              </div>
+              <div>
+                <label>Fecha pagado</label>
+                <input type="date" id="fDatePagada">
+              </div>
+            </div>
+
+            <div class="hr"></div>
+            <label>Notas (opcional)</label>
+            <textarea id="fNotes" placeholder="Bonos, ajuste de reparto, detalles del trato..."></textarea>
+
+            <div class="hr"></div>
+            <div class="hint small">
+              Regla automática: si el vendedor es <b>RAMON ERAZO</b> ⇒ <b>100% tuyo</b> (equipo $0). Si no, por defecto 50/50 (editable).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORTS -->
+      <div class="view" id="view-reports" style="display:none;">
+        <div class="grid">
+          <div class="card">
+            <div class="cardHeader">
+              <h2>📊 Reportes <span class="muted2">filtros + ranking + imprimir</span></h2>
+              <div class="row">
+                <div class="btn secondary" id="btnReportsPrint">🖨️ Imprimir reporte </div>
+              </div>
+            </div>
+            <div class="cardBody">
+              <div class="formGrid" style="grid-template-columns: repeat(4,1fr);">
+                <div><label>Desde</label><input type="date" id="rFrom"></div>
+                <div><label>Hasta</label><input type="date" id="rTo"></div>
+                <div><label>Vendedor</label><select id="rSeller"></select></div>
+                <div><label>Dealer</label><select id="rDealer"></select></div>
+              </div>
+
+              <div class="row" style="margin-top:12px;">
+                <div class="btn good" id="btnRunReport">✅ Generar reporte</div>
+                <div class="btn secondary" id="btnClearReport">Limpiar</div>
+              </div>
+
+              <div class="hr"></div>
+              <div class="hint" id="reportSummary">Genera un reporte para ver resumen y ranking.</div>
+
+              <div class="hr"></div>
+              <div class="tableWrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Fecha</th><th>Estado</th><th>Dealer</th><th>Cliente</th><th>Vendedor</th><th>Vehículo</th><th>Comisión</th><th>Fechas</th>
+                    </tr>
+                  </thead>
+                  <tbody id="reportTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="cardHeader">
+              <h2>🏆 Rankings <span class="muted2">top vendedores / dealers</span></h2>
+            </div>
+            <div class="cardBody">
+              <div class="hint small" id="rankSellers">—</div>
+              <div class="hr"></div>
+              <div class="hint small" id="rankDealers">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LOG -->
+      <div class="view" id="view-log" style="display:none;">
+        <div class="card">
+          <div class="cardHeader">
+            <h2>📋 Registro completo <span class="muted2">tipo Excel</span></h2>
+            <div class="row">
+              <div class="btn secondary" id="btnLogPrint">🖨️ Imprimir registro </div>
+            </div>
+          </div>
+          <div class="cardBody">
+            <div class="formGrid" style="grid-template-columns: repeat(4,1fr);">
+              <div><label>Buscar (cualquier campo)</label><input type="text" id="logSearch" placeholder="Ej: Toyota, METACARS, Carlos..."></div>
+              <div><label>Mes</label><input type="month" id="logMonth"></div>
+              <div><label>Vendedor</label><select id="logSeller"></select></div>
+              <div><label>Dealer</label><select id="logDealer"></select></div>
+            </div>
+
+            <div class="row" style="margin-top:12px;">
+              <div class="btn good" id="btnLogApply">🔎 Aplicar filtros</div>
+              <div class="btn secondary" id="btnLogClear">Limpiar filtros</div>
+              <div class="btn warn" id="btnOnlyCobrar">⚠️ Solo pendientes de cobrar</div>
+              <div class="btn warn" id="btnOnlyPagar">⏳ Solo pendientes de pagar</div>
+            </div>
+
+            <div class="hr"></div>
+            <div class="hint small" id="logTotals">—</div>
+
+            <div class="hr"></div>
+            <div class="tableWrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th><th>Estado</th><th>Dealer</th><th>Cliente</th><th>Vendedor</th><th>Vehículo</th><th>Comisión</th><th>Fechas</th><th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="logTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BACKUP -->
+      <div class="view" id="view-backup" style="display:none;">
+        <div class="card">
+          <div class="cardHeader">
+            <h2>💾 Respaldo JSON <span class="muted2">guardar y restaurar manual</span></h2>
+          </div>
+          <div class="cardBody">
+            <div class="row">
+              <div class="btn good" id="btnDownloadJson">⬇️ Descargar respaldo (JSON)</div>
+              <label class="btn secondary" style="cursor:pointer;">
+                ⬆️ Restaurar JSON
+                <input type="file" id="jsonFile" accept="application/json" style="display:none;">
+              </label>
+              <div class="btn bad" id="btnClearAll">🗑️ Borrar TODO (con confirmación)</div>
+            </div>
+            <div class="hr"></div>
+            <div class="hint small">
+              El respaldo incluye todas las ventas y configuraciones. Se guarda en tu PC y se restaura cuando tú lo necesites.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </section>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modalBg" id="modalBg">
+  <div class="modal">
+    <div class="modalHeader">
+      <b>Editar venta</b>
+      <div class="x" id="modalClose">✕</div>
+    </div>
+    <div class="modalBody">
+
+      <div class="formGrid">
+        <div><label>Fecha</label><input type="date" id="eDate"></div>
+        <div><label>Dealer</label><input type="text" id="eDealer"></div>
+        <div><label>Cliente</label><input type="text" id="eClient"></div>
+
+        <div><label>Vendedor</label><input type="text" id="eSeller"></div>
+        <div><label>Año</label><input type="number" id="eYear"></div>
+        <div><label>Marca</label><input type="text" id="eMake"></div>
+
+        <div><label>Modelo</label><input type="text" id="eModel"></div>
+        <div>
+          <label>Estilo</label>
+          <select id="eBodyStyle">
+            <option>SEDAN</option><option>COUPE</option><option>TROCA</option><option>SUV</option><option>VAN</option><option>BOX TRUCK</option>
+          </select>
+        </div>
+        <div>
+          <label>Tipo</label>
+          <select id="eType">
+            <option value="En casa">En casa</option>
+            <option value="Banco">Banco</option>
+          </select>
+        </div>
+
+        <div><label>Comisión total ($)</label><input type="number" id="eCommTotal" step="0.01" min="0"></div>
+        <div><label>Mi parte ($)</label><input type="number" id="eCommMe" step="0.01" min="0"></div>
+        <div><label>Parte equipo ($)</label><input type="number" id="eCommTeam" step="0.01" min="0"></div>
+
+        <div>
+          <label>Estado</label>
+          <select id="eStatus">
+            <option value="Pendiente">Pendiente</option>
+            <option value="Cobrado">Cobrado</option>
+            <option value="Pagado">Pagado</option>
+          </select>
+        </div>
+
+        <div><label>Fecha cobrado</label><input type="date" id="eDateCobrada"></div>
+        <div><label>Fecha pagado</label><input type="date" id="eDatePagada"></div>
+      </div>
+
+      <div class="hr"></div>
+      <label>Notas</label>
+      <textarea id="eNotes"></textarea>
+
+      <div class="hr"></div>
+      <div class="row right">
+        <div class="btn secondary" id="btnDelete">🗑️ Eliminar</div>
+        <div class="btn good" id="btnUpdate">💾 Guardar cambios</div>
+      </div>
+
+      <div class="hr"></div>
+      <div class="hint small">
+        Tip: para cambio rápido usa el botón <b>“Estado ▸”</b> desde la tabla (sin abrir el editor).
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================
+   DATA + STORAGE
+========================= */
+const LS_KEY = "erazo_sales_commissions_v2";
+const ME_NAME = "RAMON ERAZO";
+
+function money(n){
+  const v = Number(n||0);
+  return v.toLocaleString(undefined, {style:"currency", currency:"USD"});
+}
+function fmtDate(d){ return d ? d : "—"; }
+function todayISO(){
+  const d = new Date();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+function monthISO(){
+  const d=new Date();
+  const mm=String(d.getMonth()+1).padStart(2,"0");
+  return `${d.getFullYear()}-${mm}`;
+}
+function nowStamp(){
+  const d=new Date();
+  const pad=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+let state = { sales: [] };
+
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){
+      state = JSON.parse(raw);
+      if(!state.sales) state.sales = [];
+    }
+  }catch(e){
+    console.warn("Error load:", e);
+    state = { sales: [] };
+  }
+}
+function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+
+/* =========================
+   NAV / UI
+========================= */
+const views = ["home","new","reports","log","backup"];
+const viewTitle = document.getElementById("viewTitle");
+const viewSubtitle = document.getElementById("viewSubtitle");
+const sidebar = document.getElementById("sidebar");
+
+const viewMeta = {
+  home: ["Inicio","Resumen general y últimos registros"],
+  new: ["Registrar venta","Guardar comisiones y estados"],
+  reports: ["Reportes","Filtros, ranking e impresión"],
+  log: ["Registro","Vista tipo Excel, filtros e impresión"],
+  backup: ["Respaldo JSON","Descargar / restaurar datos"]
+};
+
+function updateToggleLabel(){
+  document.getElementById("toggleSideBtn").textContent =
+    sidebar.classList.contains("min") ? "☰" : "☰ Minimizar panel";
+}
+
+function showView(name, autoMinimize=true){
+  for(const v of views){
+    document.getElementById("view-"+v).style.display = (v===name) ? "" : "none";
+  }
+  document.querySelectorAll(".navBtn").forEach(b=>{
+    b.classList.toggle("active", b.dataset.view===name);
+  });
+  viewTitle.textContent = viewMeta[name][0];
+  viewSubtitle.textContent = viewMeta[name][1];
+
+  if(autoMinimize && name !== "home"){
+    sidebar.classList.add("min");
+    updateToggleLabel();
+  }
+  if(name==="home") renderHome();
+  if(name==="reports"){
+    fillReportSelectors();
+    renderEmptyReport();
+  }
+  if(name==="log"){
+    fillLogSelectors();
+    applyLogFilters();
+  }
+}
+
+document.querySelectorAll(".navBtn").forEach(btn=>{
+  btn.addEventListener("click", ()=> showView(btn.dataset.view, true));
+});
+
+document.getElementById("toggleSideBtn").addEventListener("click", ()=>{
+  sidebar.classList.toggle("min");
+  updateToggleLabel();
+});
+
+document.getElementById("btnQuickNew").addEventListener("click", ()=> showView("new", true));
+document.getElementById("btnNewSale").addEventListener("click", ()=> showView("new", true));
+document.getElementById("btnPendingCobrar").addEventListener("click", ()=>{
+  showView("log", true);
+  setTimeout(()=> { onlyPendingCobrar(); }, 10);
+});
+document.getElementById("btnPendingPagar").addEventListener("click", ()=>{
+  showView("log", true);
+  setTimeout(()=> { onlyPendingPagar(); }, 10);
+});
+
+/* =========================
+   AUTO SPLIT
+========================= */
+function autoSplit(total, sellerName){
+  const t = Number(total||0);
+  const isMe = (String(sellerName||"").trim().toUpperCase() === ME_NAME.toUpperCase());
+  if(isMe) return { me: t, team: 0 };
+  const half = Math.round((t/2)*100)/100;
+  const other = Math.round((t-half)*100)/100;
+  return { me: half, team: other };
+}
+
+const fSeller = document.getElementById("fSeller");
+const fCommTotal = document.getElementById("fCommTotal");
+const fCommMe = document.getElementById("fCommMe");
+const fCommTeam = document.getElementById("fCommTeam");
+
+fCommTotal.addEventListener("input", ()=>{
+  const {me, team} = autoSplit(fCommTotal.value, fSeller.value);
+  fCommMe.value = me.toFixed(2);
+  fCommTeam.value = team.toFixed(2);
+});
+fSeller.addEventListener("input", ()=>{
+  const {me, team} = autoSplit(fCommTotal.value, fSeller.value);
+  fCommMe.value = me.toFixed(2);
+  fCommTeam.value = team.toFixed(2);
+});
+
+/* =========================
+   CREATE SALE
+========================= */
+document.getElementById("btnResetForm").addEventListener("click", resetForm);
+function resetForm(){
+  document.getElementById("fDate").value = todayISO();
+  document.getElementById("fDealer").value = "";
+  document.getElementById("fClient").value = "";
+  document.getElementById("fSeller").value = "";
+  document.getElementById("fYear").value = "";
+  document.getElementById("fMake").value = "";
+  document.getElementById("fModel").value = "";
+  document.getElementById("fBodyStyle").value = "";
+  document.getElementById("fType").value = "";
+  document.getElementById("fCommTotal").value = "";
+  document.getElementById("fCommMe").value = "";
+  document.getElementById("fCommTeam").value = "";
+  document.getElementById("fStatus").value = "";
+  document.getElementById("fDateCobrada").value = "";
+  document.getElementById("fDatePagada").value = "";
+  document.getElementById("fNotes").value = "";
+}
+resetForm();
+
+document.getElementById("btnSaveSale").addEventListener("click", ()=>{
+  const date = document.getElementById("fDate").value || todayISO();
+  const dealer = document.getElementById("fDealer").value.trim();
+  const client = document.getElementById("fClient").value.trim();
+  const seller = document.getElementById("fSeller").value.trim();
+  const year = document.getElementById("fYear").value.trim();
+  const make = document.getElementById("fMake").value.trim();
+  const model = document.getElementById("fModel").value.trim();
+  const bodyStyle = document.getElementById("fBodyStyle").value;
+  const type = document.getElementById("fType").value;
+  const commTotal = Number(document.getElementById("fCommTotal").value || 0);
+  let commMe = Number(document.getElementById("fCommMe").value || 0);
+  let commTeam = Number(document.getElementById("fCommTeam").value || 0);
+  const status = document.getElementById("fStatus").value;
+  let dateCobrada = document.getElementById("fDateCobrada").value || "";
+  let datePagada = document.getElementById("fDatePagada").value || "";
+  const notes = document.getElementById("fNotes").value.trim();
+
+  if(!dealer || !seller || !year || !make || !model || commTotal<=0){
+    alert("Faltan datos: Dealer, Vendedor, Año, Marca, Modelo y Comisión total (>0).");
+    return;
+  }
+
+  if(String(seller).trim().toUpperCase() === ME_NAME.toUpperCase()){
+    commMe = commTotal;
+    commTeam = 0;
+  }else{
+    if(!document.getElementById("fCommMe").value && !document.getElementById("fCommTeam").value){
+      const split = autoSplit(commTotal, seller);
+      commMe = split.me;
+      commTeam = split.team;
+    }
+  }
+
+  if(status==="Cobrado" && !dateCobrada) dateCobrada = todayISO();
+  if(status==="Pagado"){
+    if(!dateCobrada) dateCobrada = todayISO();
+    if(!datePagada) datePagada = todayISO();
+  }
+
+  const sale = {
+    id: crypto.randomUUID(),
+    createdAt: Date.now(),
+    date,
+    dealer,
+    client,
+    seller,
+    vehicle: { year, make, model, bodyStyle, type },
+    commission: { total: commTotal, me: commMe, team: commTeam },
+    status,
+    dates: { cobrado: dateCobrada, pagado: datePagada },
+    notes
+  };
+
+  state.sales.unshift(sale);
+  save();
+  resetForm();
+  showView("home", false);
+  renderAll();
+});
+
+/* =========================
+   STATUS QUICK CHANGE
+========================= */
+function nextStatus(s){
+  if(s==="Pendiente") return "Cobrado";
+  if(s==="Cobrado") return "Pagado";
+  return "Pendiente";
+}
+function applyStatusRules(sale){
+  if(sale.status==="Cobrado"){
+    if(!sale.dates.cobrado) sale.dates.cobrado = todayISO();
+    sale.dates.pagado = sale.dates.pagado || "";
+  }
+  if(sale.status==="Pagado"){
+    if(!sale.dates.cobrado) sale.dates.cobrado = todayISO();
+    if(!sale.dates.pagado) sale.dates.pagado = todayISO();
+  }
+  if(sale.status==="Pendiente"){
+    sale.dates.cobrado = sale.dates.cobrado || "";
+    sale.dates.pagado = sale.dates.pagado || "";
+  }
+}
+window.setStatusQuick = function(id){
+  const sale = state.sales.find(s=>s.id===id);
+  if(!sale) return;
+  sale.status = nextStatus(sale.status);
+  applyStatusRules(sale);
+  save();
+  renderAll();
+}
+
+/* =========================
+   RENDER HELPERS
+========================= */
+function statusBadge(s, dates){
+  if(s==="Pendiente"){
+    return `<span class="badge bPending">⏳ Pendiente </span>
+            <div class="small">Cobrado: ${fmtDate(dates?.cobrado)}</div>
+            <div class="small">Pagado: ${fmtDate(dates?.pagado)}</div>`;
+  }
+  if(s==="Cobrado"){
+    return `<span class="badge bCobrada">💰 Cobrado</span>
+            <div class="small">Cobrado: ${fmtDate(dates?.cobrado)}</div>
+            <div class="small">Pagado: ${fmtDate(dates?.pagado)}</div>`;
+  }
+  return `<span class="badge bPagada">✅ Pagado</span>
+          <div class="small">Cobrado: ${fmtDate(dates?.cobrado)}</div>
+          <div class="small">Pagado: ${fmtDate(dates?.pagado)}</div>`;
+}
+
+function vehicleText(v){
+  return `<b>${v.year} ${v.make} ${v.model}</b>
+          <div class="small">Estilo: <b>${v.bodyStyle}</b> · Tipo: ${v.type}</div>`;
+}
+
+function commText(c, seller){
+  const isMe = (String(seller||"").trim().toUpperCase() === ME_NAME.toUpperCase());
+  const mine = isMe ? c.total : c.me;
+  const team = isMe ? 0 : c.team;
+  return `<div class="money">${money(c.total)}</div>
+          <div class="small">Mi parte: <b>${money(mine)}</b></div>
+          <div class="small">Equipo: ${money(team)}</div>`;
+}
+
+function datesCol(d){
+  return `<div class="small"><b>Cobrado</b>: ${fmtDate(d?.cobrado)}</div>
+          <div class="small"><b>Pagado</b>: ${fmtDate(d?.pagado)}</div>`;
+}
+
+function actionsCol(id){
+  return `<div class="row" style="gap:8px;">
+    <div class="btn secondary" style="padding:8px 10px;border-radius:12px;" onclick="openEdit('${id}')">✏️ Editar</div>
+    <div class="btn warn" style="padding:8px 10px;border-radius:12px;" onclick="setStatusQuick('${id}')">Estado ▸</div>
+  </div>`;
+}
+
+/* =========================
+   HOME
+========================= */
+let homeMode = "month";
+document.getElementById("btnHomeThisMonth").addEventListener("click", ()=>{ homeMode="month"; renderHome(); });
+document.getElementById("btnHomeAll").addEventListener("click", ()=>{ homeMode="all"; renderHome(); });
+
+function filterHome(){
+  if(homeMode==="all") return state.sales.slice();
+  const m = monthISO();
+  return state.sales.filter(s => (s.date||"").startsWith(m));
+}
+function computeSummary(list){
+  const ventas = list.length;
+  const total = list.reduce((a,s)=>a+Number(s.commission.total||0),0);
+  const mine = list.reduce((a,s)=>{
+    const isMe = String(s.seller||"").trim().toUpperCase()===ME_NAME.toUpperCase();
+    return a + (isMe ? Number(s.commission.total||0) : Number(s.commission.me||0));
+  },0);
+  const team = list.reduce((a,s)=>{
+    const isMe = String(s.seller||"").trim().toUpperCase()===ME_NAME.toUpperCase();
+    return a + (isMe ? 0 : Number(s.commission.team||0));
+  },0);
+
+  const pendCobrar = list.filter(s=>s.status==="Pendiente").reduce((a,s)=>a+Number(s.commission.total||0),0);
+  const pendPagar = list
+    .filter(s=>s.status==="Cobrado")
+    .reduce((a,s)=>a+(String(s.seller||"").trim().toUpperCase()===ME_NAME.toUpperCase()?0:Number(s.commission.team||0)),0);
+
+  return { ventas, total, mine, team, pendCobrar, pendPagar };
+}
+
+function renderKpis(sum){
+  document.getElementById("kpiRow").innerHTML = `
+    <div class="kpiBox"><span>Ventas</span><b>${sum.ventas}</b></div>
+    <div class="kpiBox"><span>Comisión total</span><b>${money(sum.total)}</b></div>
+    <div class="kpiBox"><span>Mi parte</span><b>${money(sum.mine)}</b></div>
+    <div class="kpiBox"><span>Pendiente</span><b>${money(sum.pendCobrar)}</b><span>de cobrar</span></div>
+  `;
+}
+
+function renderHome(){
+  const list = filterHome();
+  document.getElementById("homeRangeText").textContent = homeMode==="all" ? "Todo el historial" : ("Mes: " + monthISO());
+  const sum = computeSummary(list);
+  renderKpis(sum);
+
+  const tb = document.getElementById("homeTableBody");
+  const last = list.slice(0, 8);
+  tb.innerHTML = last.map(s=>`
+    <tr>
+      <td class="nowrap">${s.date}</td>
+      <td>${statusBadge(s.status, s.dates)}</td>
+      <td><b>${s.dealer}</b></td>
+      <td><b>${s.client || "—"}</b></td>
+      <td><b>${s.seller}</b><div class="small">${String(s.seller||"").trim().toUpperCase()===ME_NAME.toUpperCase() ? "Venta propia (100%)" : "Reparto (editable)"}</div></td>
+      <td>${vehicleText(s.vehicle)}</td>
+      <td>${commText(s.commission, s.seller)}</td>
+      <td>${datesCol(s.dates)}</td>
+      <td>${actionsCol(s.id)}</td>
+    </tr>
+  `).join("") || `<tr><td colspan="9" class="muted">No hay registros todavía. Registra tu primera venta.</td></tr>`;
+}
+
+/* =========================
+   REPORTS + LOG SELECTORS
+========================= */
+function unique(list, keyFn){
+  return Array.from(new Set(list.map(keyFn).filter(Boolean))).sort((a,b)=>String(a).localeCompare(String(b)));
+}
+function fillReportSelectors(){
+  const sellers = unique(state.sales, s=>s.seller);
+  const dealers = unique(state.sales, s=>s.dealer);
+  const rSeller = document.getElementById("rSeller");
+  const rDealer = document.getElementById("rDealer");
+
+  rSeller.innerHTML = `<option value="">(todos)</option>` + sellers.map(s=>`<option>${s}</option>`).join("");
+  rDealer.innerHTML = `<option value="">(todos)</option>` + dealers.map(d=>`<option>${d}</option>`).join("");
+
+  document.getElementById("rFrom").value = state.sales[0]?.date || monthISO()+"-01";
+  document.getElementById("rTo").value = "";
+}
+function renderEmptyReport(){
+  document.getElementById("reportSummary").innerHTML = "Genera un reporte para ver resumen y ranking.";
+  document.getElementById("reportTableBody").innerHTML = "";
+  document.getElementById("rankSellers").innerHTML = "Top vendedores: —";
+  document.getElementById("rankDealers").innerHTML = "Top dealers: —";
+}
+
+function inRange(date, from, to){
+  if(from && date < from) return false;
+  if(to && date > to) return false;
+  return true;
+}
+
+let lastReportList = [];
+let lastReportFilters = null;
+
+function runReport(){
+  const from = document.getElementById("rFrom").value || "";
+  const to = document.getElementById("rTo").value || "";
+  const seller = document.getElementById("rSeller").value || "";
+  const dealer = document.getElementById("rDealer").value || "";
+
+  let list = state.sales.slice().filter(s=>{
+    if(!inRange(s.date, from, to)) return false;
+    if(seller && s.seller !== seller) return false;
+    if(dealer && s.dealer !== dealer) return false;
+    return true;
+  });
+
+  lastReportList = list;
+  lastReportFilters = { from, to, seller, dealer };
+
+  const sum = computeSummary(list);
+  const pendingCobrar = list.filter(s=>s.status==="Pendiente").reduce((a,s)=>a+Number(s.commission.total||0),0);
+  const pendingPagar = list.filter(s=>s.status==="Cobrado").reduce((a,s)=>a+(String(s.seller||"").trim().toUpperCase()===ME_NAME.toUpperCase()?0:Number(s.commission.team||0)),0);
+
+  document.getElementById("reportSummary").innerHTML = `
+    <b>Resumen</b><br>
+    Ventas: <b>${sum.ventas}</b><br>
+    Comisión total: <b>${money(sum.total)}</b><br>
+    Mi parte: <b>${money(sum.mine)}</b> · Equipo: ${money(sum.team)}<br>
+    Pendiente de cobrar: <b>${money(pendingCobrar)}</b><br>
+    Pendiente de pagar: <b>${money(pendingPagar)}</b><br>
+    <span class="muted2">Filtros: ${from?("Desde "+from):"Desde —"} · ${to?("Hasta "+to):"Hasta —"} · ${seller||"(todos)"} · ${dealer||"(todos)"}</span>
+  `;
+
+  const bySeller = {};
+  const byDealer = {};
+  list.forEach(s=>{
+    bySeller[s.seller] = (bySeller[s.seller]||0)+1;
+    byDealer[s.dealer] = (byDealer[s.dealer]||0)+1;
+  });
+  const topS = Object.entries(bySeller).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const topD = Object.entries(byDealer).sort((a,b)=>b[1]-a[1]).slice(0,6);
+
+  document.getElementById("rankSellers").innerHTML = "<b>Top vendedores (por ventas)</b><br>" +
+    (topS.length? topS.map(([n,c])=>`• ${n} — <b>${c}</b>`).join("<br>") : "—");
+  document.getElementById("rankDealers").innerHTML = "<b>Top dealers (por ventas)</b><br>" +
+    (topD.length? topD.map(([n,c])=>`• ${n} — <b>${c}</b>`).join("<br>") : "—");
+
+  const tb = document.getElementById("reportTableBody");
+  tb.innerHTML = list.map(s=>`
+    <tr>
+      <td class="nowrap">${s.date}</td>
+      <td>${statusBadge(s.status, s.dates)}</td>
+      <td><b>${s.dealer}</b></td>
+      <td><b>${s.client || "—"}</b></td>
+      <td><b>${s.seller}</b></td>
+      <td>${vehicleText(s.vehicle)}</td>
+      <td>${commText(s.commission, s.seller)}</td>
+      <td>${datesCol(s.dates)}</td>
+    </tr>
+  `).join("") || `<tr><td colspan="8" class="muted">No hay resultados con esos filtros.</td></tr>`;
+}
+
+document.getElementById("btnRunReport").addEventListener("click", runReport);
+document.getElementById("btnClearReport").addEventListener("click", ()=>{
+  document.getElementById("rFrom").value = "";
+  document.getElementById("rTo").value = "";
+  document.getElementById("rSeller").value = "";
+  document.getElementById("rDealer").value = "";
+  lastReportList = [];
+  lastReportFilters = null;
+  renderEmptyReport();
+});
+
+/* =========================
+   LOG (Excel style)
+========================= */
+function fillLogSelectors(){
+  const sellers = unique(state.sales, s=>s.seller);
+  const dealers = unique(state.sales, s=>s.dealer);
+  document.getElementById("logSeller").innerHTML = `<option value="">(todos)</option>` + sellers.map(s=>`<option>${s}</option>`).join("");
+  document.getElementById("logDealer").innerHTML = `<option value="">(todos)</option>` + dealers.map(d=>`<option>${d}</option>`).join("");
+}
+
+let logMode = "all";
+let lastLogList = [];
+
+function applyLogFilters(){
+  const q = (document.getElementById("logSearch").value||"").trim().toLowerCase();
+  const m = (document.getElementById("logMonth").value||"").trim();
+  const seller = document.getElementById("logSeller").value || "";
+  const dealer = document.getElementById("logDealer").value || "";
+
+  let list = state.sales.slice();
+
+  if(m) list = list.filter(s => (s.date||"").startsWith(m));
+  if(seller) list = list.filter(s => s.seller === seller);
+  if(dealer) list = list.filter(s => s.dealer === dealer);
+
+  if(q){
+    list = list.filter(s=>{
+      const hay = [
+        s.date, s.dealer, s.client, s.seller,
+        s.vehicle?.year, s.vehicle?.make, s.vehicle?.model, s.vehicle?.bodyStyle, s.vehicle?.type,
+        s.status, s.notes
+      ].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+  if(logMode==="onlyCobrar") list = list.filter(s=>s.status==="Pendiente");
+  if(logMode==="onlyPagar") list = list.filter(s=>s.status==="Cobrado" && String(s.seller||"").trim().toUpperCase()!==ME_NAME.toUpperCase());
+
+  lastLogList = list;
+
+  const sum = computeSummary(list);
+  document.getElementById("logTotals").innerHTML =
+    `Totales (vista actual): Ventas: <b>${sum.ventas}</b> · Comisión total: <b>${money(sum.total)}</b> · Mi parte: <b>${money(sum.mine)}</b> · Equipo: ${money(sum.team)}`;
+
+  const tb = document.getElementById("logTableBody");
+  tb.innerHTML = list.map(s=>`
+    <tr>
+      <td class="nowrap">${s.date}</td>
+      <td>${statusBadge(s.status, s.dates)}</td>
+      <td><b>${s.dealer}</b></td>
+      <td><b>${s.client || "—"}</b></td>
+      <td><b>${s.seller}</b><div class="small">${String(s.seller||"").trim().toUpperCase()===ME_NAME.toUpperCase() ? "Venta propia (100%)" : "Reparto (editable)"}</div></td>
+      <td>${vehicleText(s.vehicle)}</td>
+      <td>${commText(s.commission, s.seller)}</td>
+      <td>${datesCol(s.dates)}</td>
+      <td>${actionsCol(s.id)}</td>
+    </tr>
+  `).join("") || `<tr><td colspan="9" class="muted">No hay resultados.</td></tr>`;
+}
+
+function onlyPendingCobrar(){ logMode="onlyCobrar"; applyLogFilters(); }
+function onlyPendingPagar(){ logMode="onlyPagar"; applyLogFilters(); }
+
+document.getElementById("btnLogApply").addEventListener("click", ()=>{ logMode="all"; applyLogFilters(); });
+document.getElementById("btnLogClear").addEventListener("click", ()=>{
+  logMode="all";
+  document.getElementById("logSearch").value="";
+  document.getElementById("logMonth").value="";
+  document.getElementById("logSeller").value="";
+  document.getElementById("logDealer").value="";
+  applyLogFilters();
+});
+document.getElementById("btnOnlyCobrar").addEventListener("click", onlyPendingCobrar);
+document.getElementById("btnOnlyPagar").addEventListener("click", onlyPendingPagar);
+
+/* =========================
+   EDIT MODAL
+========================= */
+const modalBg = document.getElementById("modalBg");
+document.getElementById("modalClose").addEventListener("click", closeModal);
+modalBg.addEventListener("click", (e)=>{ if(e.target===modalBg) closeModal(); });
+
+let editId = null;
+
+window.openEdit = function(id){
+  editId = id;
+  const s = state.sales.find(x=>x.id===id);
+  if(!s) return;
+
+  document.getElementById("eDate").value = s.date || "";
+  document.getElementById("eDealer").value = s.dealer || "";
+  document.getElementById("eClient").value = s.client || "";
+  document.getElementById("eSeller").value = s.seller || "";
+  document.getElementById("eYear").value = s.vehicle?.year || "";
+  document.getElementById("eMake").value = s.vehicle?.make || "";
+  document.getElementById("eModel").value = s.vehicle?.model || "";
+  document.getElementById("eBodyStyle").value = s.vehicle?.bodyStyle || "TROCA";
+  document.getElementById("eType").value = s.vehicle?.type || "En casa";
+
+  document.getElementById("eCommTotal").value = Number(s.commission?.total||0).toFixed(2);
+  document.getElementById("eCommMe").value = Number(s.commission?.me||0).toFixed(2);
+  document.getElementById("eCommTeam").value = Number(s.commission?.team||0).toFixed(2);
+
+  document.getElementById("eStatus").value = s.status || "Pendiente";
+  document.getElementById("eDateCobrada").value = s.dates?.cobrado || "";
+  document.getElementById("eDatePagada").value = s.dates?.pagado || "";
+  document.getElementById("eNotes").value = s.notes || "";
+
+  modalBg.style.display="flex";
+};
+
+function closeModal(){
+  modalBg.style.display="none";
+  editId = null;
+}
+
+document.getElementById("btnUpdate").addEventListener("click", ()=>{
+  if(!editId) return;
+  const s = state.sales.find(x=>x.id===editId);
+  if(!s) return;
+
+  s.date = document.getElementById("eDate").value || s.date;
+  s.dealer = document.getElementById("eDealer").value.trim();
+  s.client = document.getElementById("eClient").value.trim();
+  s.seller = document.getElementById("eSeller").value.trim();
+  s.vehicle.year = document.getElementById("eYear").value.trim();
+  s.vehicle.make = document.getElementById("eMake").value.trim();
+  s.vehicle.model = document.getElementById("eModel").value.trim();
+  s.vehicle.bodyStyle = document.getElementById("eBodyStyle").value;
+  s.vehicle.type = document.getElementById("eType").value;
+
+  const total = Number(document.getElementById("eCommTotal").value||0);
+  let me = Number(document.getElementById("eCommMe").value||0);
+  let team = Number(document.getElementById("eCommTeam").value||0);
+
+  if(String(s.seller||"").trim().toUpperCase()===ME_NAME.toUpperCase()){
+    me = total; team = 0;
+  }
+
+  s.commission.total = total;
+  s.commission.me = me;
+  s.commission.team = team;
+
+  s.status = document.getElementById("eStatus").value;
+  s.dates.cobrado = document.getElementById("eDateCobrada").value || "";
+  s.dates.pagado = document.getElementById("eDatePagada").value || "";
+  s.notes = document.getElementById("eNotes").value.trim();
+
+  applyStatusRules(s);
+  save();
+  closeModal();
+  renderAll();
+});
+
+document.getElementById("btnDelete").addEventListener("click", ()=>{
+  if(!editId) return;
+  if(!confirm("¿Seguro que deseas eliminar este registro?")) return;
+  state.sales = state.sales.filter(x=>x.id!==editId);
+  save();
+  closeModal();
+  renderAll();
+});
+
+/* =========================
+   BACKUP JSON
+========================= */
+document.getElementById("btnDownloadJson").addEventListener("click", ()=>{
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  const d = new Date();
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const dd = String(d.getDate()).padStart(2,"0");
+  a.download = `Respaldo Ventas ${d.getFullYear()}-${mm}-${dd}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+document.getElementById("jsonFile").addEventListener("change", (e)=>{
+  const file = e.target.files?.[0];
+  if(!file) return;
+  const r = new FileReader();
+  r.onload = ()=>{
+    try{
+      const data = JSON.parse(String(r.result||""));
+      if(!data || !Array.isArray(data.sales)){
+        alert("JSON inválido: no contiene 'sales'.");
+        return;
+      }
+      if(!confirm("Esto reemplazará los datos actuales. ¿Continuar?")) return;
+      state = data;
+      save();
+      renderAll();
+      alert("✅ Respaldo restaurado correctamente.");
+    }catch(err){
+      alert("No se pudo leer el JSON. Asegúrate que sea un respaldo válido.");
+    }
+    e.target.value = "";
+  };
+  r.readAsText(file);
+});
+
+document.getElementById("btnClearAll").addEventListener("click", ()=>{
+  if(!confirm("Esto borrará TODO. ¿Seguro?")) return;
+  if(!confirm("Última confirmación: ¿borrar todo definitivamente?")) return;
+  state = { sales: [] };
+  save();
+  renderAll();
+});
+
+/* =========================
+   PRINT (FORMAL) - FIX
+
+========================= */
+function escapeHtml(s){
+  return String(s||"")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;");
+}
+
+function buildFormalReportHTML({title, subtitle, filtersText, summaryLines, rows}) {
+  const logo = "logo.png";
+  const generated = nowStamp();
+
+  const summaryHtml = summaryLines.map(x=>`
+    <div class="sumLine"><span>${escapeHtml(x.label)}</span><b>${escapeHtml(x.value)}</b></div>
+  `).join("");
+
+  const rowsHtml = rows.map(r=>`
+    <tr>
+      <td>${escapeHtml(r.date)}</td>
+      <td>${escapeHtml(r.status)}</td>
+      <td>${escapeHtml(r.dealer)}</td>
+      <td>${escapeHtml(r.client)}</td>
+      <td>${escapeHtml(r.seller)}</td>
+      <td>${escapeHtml(r.vehicle)}</td>
+      <td style="text-align:right">${escapeHtml(r.comm)}</td>
+      <td>${escapeHtml(r.cobrado)}</td>
+      <td>${escapeHtml(r.pagado)}</td>
+    </tr>
+  `).join("");
+
+  return `
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>${escapeHtml(title)}</title>
+  <style>
+    *{ box-sizing:border-box; }
+    body{ margin:0; font-family: Arial, Helvetica, sans-serif; color:#0f172a; background:#fff; }
+    .page{ padding: 26px 28px; }
+    .header{
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+      border-bottom: 2px solid #0f172a; padding-bottom: 14px; margin-bottom: 14px;
+    }
+    .brand{ display:flex; align-items:center; gap:12px; min-width:0; }
+    .brand img{ width:54px;height:54px; object-fit:cover; border-radius: 10px; border:1px solid #cbd5e1; }
+    .brand h1{ margin:0; font-size: 18px; line-height:1.2; }
+    .brand p{ margin:3px 0 0; color:#475569; font-size: 12px; }
+    .meta{ text-align:right; font-size: 12px; color:#334155; }
+    .meta b{ color:#0f172a; }
+    .filters{
+      background:#f1f5f9; border:1px solid #e2e8f0; border-radius: 10px;
+      padding: 10px 12px; font-size:12px; color:#334155; margin-bottom: 12px;
+    }
+    .grid{ display:grid; grid-template-columns: 1.1fr .9fr; gap:12px; margin-bottom: 12px; }
+    .box{ border:1px solid #e2e8f0; border-radius: 12px; padding: 12px; background:#ffffff; }
+    .box h3{ margin:0 0 8px; font-size: 13px; color:#0f172a; }
+    .sumLine{
+      display:flex; align-items:center; justify-content:space-between;
+      padding: 6px 0; border-bottom: 1px dashed #e2e8f0; font-size:12px;
+    }
+    .sumLine:last-child{ border-bottom:none; }
+    table{ width:100%; border-collapse:collapse; font-size: 11.5px; }
+    th, td{ border:1px solid #e2e8f0; padding: 7px 8px; vertical-align:top; }
+    th{ background:#0f172a; color:#fff; font-weight:700; font-size:11px; letter-spacing:.2px; }
+    .foot{
+      margin-top: 10px; font-size: 11px; color:#64748b;
+      display:flex; justify-content:space-between; gap:10px;
+      border-top:1px solid #e2e8f0; padding-top: 10px;
+    }
+    @media print{ .page{ padding: 18px 18px; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="header">
+      <div class="brand">
+        <img src="${logo}" alt="Erazo Cars">
+        <div style="min-width:0">
+          <h1>ERAZO CARS — Control de Ventas y Comisiones</h1>
+          <p>Reporte generado desde el sistema</p>
+        </div>
+      </div>
+      <div class="meta">
+        <div><b>${escapeHtml(title)}</b></div>
+        <div>${escapeHtml(subtitle)}</div>
+        <div>Generado: <b>${escapeHtml(generated)}</b></div>
+      </div>
+    </div>
+
+    <div class="filters"><b>Filtros:</b> ${escapeHtml(filtersText)}</div>
+
+    <div class="grid">
+      <div class="box">
+        <h3>Resumen</h3>
+        ${summaryHtml}
+      </div>
+      <div class="box">
+        <h3>Notas</h3>
+        <div style="font-size:12px;color:#475569;line-height:1.5">
+          • Estados: Pendiente (por cobrar), Cobrado (pendiente de pagar equipo), Pagado (cerrado).<br>
+        </div>
+      </div>
+    </div>
+
+    <div class="box">
+      <h3>Detalle</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th><th>Estado</th><th>Dealer</th><th>Cliente</th><th>Vendedor</th><th>Vehículo</th>
+            <th style="text-align:right">Comisión</th><th>Cobrado</th><th>Pagado</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml || `<tr><td colspan="9">Sin resultados.</td></tr>`}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="foot">
+      <div>ERAZO CARS — Houston, TX</div>
+      <div>Documento generado automáticamente • Control Interno</div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+function toPrintableRows(list){
+  return list.map(s=>{
+    const v = s.vehicle || {};
+    const veh = `${v.year||""} ${v.make||""} ${v.model||""} (${v.bodyStyle||""} / ${v.type||""})`.trim();
+    return {
+      date: s.date || "",
+      status: s.status || "",
+      dealer: s.dealer || "",
+      client: s.client || "—",
+      seller: s.seller || "",
+      vehicle: veh,
+      comm: money(s.commission?.total||0),
+      cobrado: fmtDate(s.dates?.cobrado),
+      pagado: fmtDate(s.dates?.pagado)
+    };
+  });
+}
+
+function printFormal({title, subtitle, filtersText, list}){
+  const sum = computeSummary(list);
+  const pendingCobrar = list.filter(s=>s.status==="Pendiente").reduce((a,s)=>a+Number(s.commission.total||0),0);
+  const pendingPagar = list.filter(s=>s.status==="Cobrado").reduce((a,s)=>a+(String(s.seller||"").trim().toUpperCase()===ME_NAME.toUpperCase()?0:Number(s.commission.team||0)),0);
+
+  const summaryLines = [
+    {label:"Ventas", value: String(sum.ventas)},
+    {label:"Comisión total", value: money(sum.total)},
+    {label:"Mi parte", value: money(sum.mine)},
+    {label:"Equipo", value: money(sum.team)},
+    {label:"Pendiente de cobrar", value: money(pendingCobrar)},
+    {label:"Pendiente de pagar", value: money(pendingPagar)},
+  ];
+
+  const rows = toPrintableRows(list);
+  const html = buildFormalReportHTML({title, subtitle, filtersText, summaryLines, rows});
+
+  const w = window.open("", "_blank");
+  if(!w){ alert("Tu navegador bloqueó la ventana de impresión (pop-up). Permite pop-ups para imprimir."); return; }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+
+  // ✅ disparo de impresión sin meter <script> dentro del HTML
+  setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} }, 350);
+}
+
+/* Botones impresión */
+document.getElementById("btnReportsPrint").addEventListener("click", ()=>{
+  if(!lastReportFilters){
+    alert("Primero genera el reporte (✅ Generar reporte).");
+    return;
+  }
+  const f = lastReportFilters;
+  const filtersText = `Desde ${f.from||"—"} · Hasta ${f.to||"—"} · Vendedor ${f.seller||"(todos)"} · Dealer ${f.dealer||"(todos)"}`;
+  printFormal({
+    title: "Reporte de ventas y comisiones",
+    subtitle: "Resultados según filtros aplicados",
+    filtersText,
+    list: lastReportList
+  });
+});
+
+document.getElementById("btnLogPrint").addEventListener("click", ()=>{
+  const q = (document.getElementById("logSearch").value||"").trim() || "—";
+  const m = (document.getElementById("logMonth").value||"").trim() || "—";
+  const s = (document.getElementById("logSeller").value||"") || "(todos)";
+  const d = (document.getElementById("logDealer").value||"") || "(todos)";
+  const mode = logMode==="onlyCobrar" ? "Pendientes de cobrar" : (logMode==="onlyPagar" ? "Pendientes de pagar" : "Todos");
+  const filtersText = `Búsqueda "${q}" · Mes ${m} · Vendedor ${s} · Dealer ${d} · Vista ${mode}`;
+  printFormal({
+    title: "Registro completo",
+    subtitle: "Listado formal para control interno",
+    filtersText,
+    list: lastLogList
+  });
+});
+
+document.getElementById("btnHomePrint").addEventListener("click", ()=>{
+  const list = filterHome();
+  const filtersText = homeMode==="all" ? "Todo el historial" : `Mes ${monthISO()}`;
+  printFormal({
+    title: "Resumen general",
+    subtitle: "Ventas recientes y totales del período",
+    filtersText,
+    list
+  });
+});
+document.getElementById("btnHomePrint2").addEventListener("click", ()=>{
+  const list = filterHome();
+  const filtersText = homeMode==="all" ? "Todo el historial" : `Mes ${monthISO()}`;
+  printFormal({
+    title: "Resumen general",
+    subtitle: "Ventas recientes y totales del período",
+    filtersText,
+    list
+  });
+});
+
+/* =========================
+   GLOBAL RENDER
+========================= */
+function renderAll(){
+  renderHome();
+  if(document.getElementById("view-log").style.display!=="none"){
+    fillLogSelectors();
+    applyLogFilters();
+  }
+  if(document.getElementById("view-reports").style.display!=="none"){
+    fillReportSelectors();
+  }
+}
+
+load();
+updateToggleLabel();
+renderAll();
+showView("home", false);
+
+document.getElementById("logSearch").addEventListener("input", ()=>{ logMode="all"; applyLogFilters(); });
+
+document.getElementById("btnOpenCRM")?.addEventListener("click", ()=>{
+  window.open("CRM Erazo Cars.html", "_blank");
+});
+
+
+</script>
+</body>
+</html>
